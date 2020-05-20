@@ -52,7 +52,7 @@ func serve() {
 	r.HandleFunc("/list/ns", func(w http.ResponseWriter, r *http.Request) {
 		controller.GetNamespaces(h, w, r)
 	}).Methods("GET")
-	r.HandleFunc("/list3/dep/{ns}", controller.GetDeployments).Methods("GET")
+	r.HandleFunc("/list/dep/{ns}", controller.GetDeployments).Methods("GET")
 	r.HandleFunc("/dep/{ns}/{dep}", controller.GetDeployment).Methods("GET")
 	r.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		controller.StreamUpdateds(h, w, r)
