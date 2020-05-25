@@ -25,7 +25,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 
-	"github.com/idobry/teleskope/backend/teleskope/controller"
+	"teleskope_backend/controller"
 )
 
 // runCmd represents the run command

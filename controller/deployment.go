@@ -3,6 +3,8 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"time"
 	"net/http"
 	"github.com/gorilla/mux"
 	appsv1 "k8s.io/api/apps/v1"
@@ -27,6 +29,7 @@ type DeploymentEvent struct{
 	Containers []Container
 	ReplicaCurrent string
 	ReplicaDesired string
+	Age string
 }
 
 func GetDeployment(w http.ResponseWriter, r *http.Request) {
@@ -73,7 +76,7 @@ func GetDeployments(w http.ResponseWriter, r *http.Request) {
 }
 
 func StreamDeployments(h *Hub) {
-	fmt.Printf("Inside StreamDeployments func... 0.0.3\n")
+	fmt.Printf("Inside StreamDeployments func\n")
 	kubeclient := GetKubeClient()
 
 	factory := informers.NewSharedInformerFactory(kubeclient, 0)
@@ -98,16 +101,13 @@ func StreamDeployments(h *Hub) {
 }
 
 func getDeployEvent(newDepl *appsv1.Deployment) []byte{
-	fmt.Println("***************")
-	fmt.Println(newDepl.Status)
-	fmt.Println("***************")
-
 	deploy := DeploymentEvent{
 		Name: newDepl.Name,
 		Namespace: newDepl.Namespace,
 		ReplicaCurrent: fmt.Sprintf("%d", newDepl.Status.AvailableReplicas),
 		ReplicaDesired: fmt.Sprintf("%d", newDepl.Status.Replicas),
 		Containers: []Container{},
+		Age: calcAge(newDepl.CreationTimestamp),
 	}
 
 	for _ ,c := range newDepl.Spec.Template.Spec.Containers{
@@ -127,4 +127,19 @@ func getDeployEvent(newDepl *appsv1.Deployment) []byte{
 		return nil
 	}
 	return b
+}
+
+func calcAge(depCreationTime metav1.Time) string{
+	format := "2006-01-02T15:04:05.000Z"
+	then,_ := time.Parse(format, depCreationTime.Format(format))
+
+	date , _:= time.Parse(format, time.Now().Format(format))
+
+	diff := date.Sub(then)
+
+	d := int(diff.Hours()/24)
+	h := int(diff.Hours())%d
+	m := int(diff.Minutes())%h
+
+	return strconv.Itoa(d) + "d" + strconv.Itoa(h) + "h" + strconv.Itoa(m) + "m"
 }
