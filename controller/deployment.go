@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
 	"github.com/gorilla/mux"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -74,7 +73,7 @@ func GetDeployments(w http.ResponseWriter, r *http.Request) {
 }
 
 func StreamDeployments(h *Hub) {
-	fmt.Printf("Inside StreamDeployments func\n")
+	fmt.Printf("Inside StreamDeployments func... 0.0.3\n")
 	kubeclient := GetKubeClient()
 
 	factory := informers.NewSharedInformerFactory(kubeclient, 0)
@@ -99,6 +98,10 @@ func StreamDeployments(h *Hub) {
 }
 
 func getDeployEvent(newDepl *appsv1.Deployment) []byte{
+	fmt.Println("***************")
+	fmt.Println(newDepl.Status)
+	fmt.Println("***************")
+
 	deploy := DeploymentEvent{
 		Name: newDepl.Name,
 		Namespace: newDepl.Namespace,
@@ -106,6 +109,7 @@ func getDeployEvent(newDepl *appsv1.Deployment) []byte{
 		ReplicaDesired: fmt.Sprintf("%d", newDepl.Status.Replicas),
 		Containers: []Container{},
 	}
+
 	for _ ,c := range newDepl.Spec.Template.Spec.Containers{
 		var con = Container{}
 		con.Name = c.Name
