@@ -101,6 +101,9 @@ func StreamDeployments(h *Hub) {
 }
 
 func getDeployEvent(newDepl *appsv1.Deployment) []byte{
+
+	fmt.Println(newDepl)
+
 	deploy := DeploymentEvent{
 		Name: newDepl.Name,
 		Namespace: newDepl.Namespace,
@@ -116,7 +119,11 @@ func getDeployEvent(newDepl *appsv1.Deployment) []byte{
 		con.Image = c.Image
 		con.Envs = []string{}
 		for _, env := range c.Env{
-			con.Envs = append(con.Envs, env.Name+":"+env.Value)
+			if env.Value == ""{
+				con.Envs = append(con.Envs, env.Name+":********")
+			}else{
+				con.Envs = append(con.Envs, env.Name+":"+env.Value)
+			}
 		}
 		deploy.Containers = append(deploy.Containers, con)
 	}
