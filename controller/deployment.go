@@ -101,9 +101,6 @@ func StreamDeployments(h *Hub) {
 }
 
 func getDeployEvent(newDepl *appsv1.Deployment) []byte{
-
-	fmt.Println(newDepl)
-
 	deploy := DeploymentEvent{
 		Name: newDepl.Name,
 		Namespace: newDepl.Namespace,
@@ -145,14 +142,18 @@ func calcAge(depCreationTime metav1.Time) string{
 	diff := date.Sub(then)
 
 	d := int(diff.Hours())
+	h := int(diff.Hours())
+	m := int(diff.Minutes())
+
 	if d > 0{
 		d = d/24
+		h = h%d
 	}else{
-		return "N/A"
+		d = 0
 	}
-
-	h := int(diff.Hours())%d
-	m := int(diff.Minutes())%h
+	if h > 0{
+		m = m%h
+	}
 
 	return strconv.Itoa(d) + "d" + strconv.Itoa(h) + "h" + strconv.Itoa(m) + "m"
 }
