@@ -144,7 +144,13 @@ func calcAge(depCreationTime metav1.Time) string{
 
 	diff := date.Sub(then)
 
-	d := int(diff.Hours()/24)
+	d := int(diff.Hours())
+	if d > 0{
+		d = d/24
+	}else{
+		return "N/A"
+	}
+
 	h := int(diff.Hours())%d
 	m := int(diff.Minutes())%h
 
