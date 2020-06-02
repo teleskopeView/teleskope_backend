@@ -107,7 +107,7 @@ func getDeployEvent(newDepl *appsv1.Deployment) []byte{
 		ReplicaCurrent: fmt.Sprintf("%d", newDepl.Status.AvailableReplicas),
 		ReplicaDesired: fmt.Sprintf("%d", newDepl.Status.Replicas),
 		Containers: []Container{},
-		Age: calcAge(newDepl.CreationTimestamp),
+		Age: calcAge(newDepl.Status.Conditions[0].LastUpdateTime),
 	}
 
 	for _ ,c := range newDepl.Spec.Template.Spec.Containers{
@@ -144,16 +144,24 @@ func calcAge(depCreationTime metav1.Time) string{
 	d := int(diff.Hours())
 	h := int(diff.Hours())
 	m := int(diff.Minutes())
-
+	fmt.Println("before:")
+	fmt.Println(strconv.Itoa(d) + "d" + strconv.Itoa(h) + "h" + strconv.Itoa(m) + "m")
 	if d > 0{
+		fmt.Println("1")
 		d = d/24
-		h = h%d
+		fmt.Println("2")
+		if d > 0 {
+			h = h % d
+		}
 	}else{
+		fmt.Println("3")
 		d = 0
 	}
 	if h > 0{
+		fmt.Println("4")
 		m = m%h
 	}
-
+	fmt.Println("after:")
+	fmt.Println(strconv.Itoa(d) + "d" + strconv.Itoa(h) + "h" + strconv.Itoa(m) + "m")
 	return strconv.Itoa(d) + "d" + strconv.Itoa(h) + "h" + strconv.Itoa(m) + "m"
 }
