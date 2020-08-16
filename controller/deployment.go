@@ -98,7 +98,7 @@ func GetDeploymentLogs(w http.ResponseWriter, r *http.Request) {
 		fmt.Errorf("no pods found for deployment %s",dep)
 	}
 	tail := int64(50)
-	podLogOpts := corev1.PodLogOptions{TailLines: &tail}
+	podLogOpts := corev1.PodLogOptions{TailLines: &tail,Container:"master"}
 	req := kubeclient.CoreV1().Pods(ns).GetLogs((*pods)[0].Name, &podLogOpts)
 	podLogs, err := req.Stream()
 	if err != nil {
