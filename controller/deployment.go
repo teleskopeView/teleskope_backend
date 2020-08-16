@@ -1,8 +1,14 @@
 package controller
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
+	"k8s.io/client-go/kubernetes"
 	"strconv"
 	"time"
 	"net/http"
@@ -11,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/tools/cache"
+	"context"
 )
 
 type Container struct{
@@ -46,6 +53,69 @@ func GetDeployment(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(getDeployEvent(newDepl))
+	if err != nil{
+		panic(err)
+	}
+	return
+}
+
+func getDeploymentPods(deploymentName string,namespace string) (*[]corev1.Pod,error) {
+	fmt.Printf("getPodsOf called with deployment %s\n",deploymentName)
+	kubeclient := GetKubeClient()
+	deployment,err := kubeclient.AppsV1().Deployments(namespace).Get(deploymentName,metav1.GetOptions{})
+	if err != nil {
+		panic(err)
+	}
+	labelSelector := labels.NewSelector()
+	for labelKey, labelVal := range deployment.Spec.Selector.MatchLabels {
+		requirement, err := labels.NewRequirement(labelKey, selection.Equals, []string{labelVal})
+		if err != nil {
+			fmt.Println("Unable to create selector requirement\n")
+			return nil,err
+		}
+		labelSelector = labelSelector.Add(*requirement)
+	}
+	fmt.Printf("labelSelector: %s\n",labelSelector.String())
+	runningOnlyRule := "status.phase=Running"
+	options := metav1.ListOptions{
+		LabelSelector:       labelSelector.String(),
+		FieldSelector:       runningOnlyRule,
+	}
+	pods, err := kubeclient.CoreV1().Pods(deployment.Namespace).List(options)
+	return &pods.Items,err
+}
+
+func GetDeploymentLogs(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("Inside GetDeploymentLogs func\n")
+	vars := mux.Vars(r)
+	ns := vars["ns"]
+	dep := vars["dep"]
+	fmt.Printf("dep %s in %s \n", dep, ns)
+	kubeclient := GetKubeClient()
+	pods,err := getDeploymentPods(dep,ns)
+	if err != nil {
+		panic(err)
+	}
+	if len(*pods) == 0 {
+		fmt.Errorf("no pods found for deployment %s",dep)
+	}
+	tail := int64(50)
+	podLogOpts := corev1.PodLogOptions{TailLines: &tail}
+	req := kubeclient.CoreV1().Pods(ns).GetLogs((*pods)[0].Name, &podLogOpts)
+	podLogs, err := req.Stream()
+	if err != nil {
+		panic(err)
+	}
+	defer podLogs.Close()
+
+	buf := new(bytes.Buffer)
+	_, err = io.Copy(buf, podLogs)
+	if err != nil {
+		panic(err)
+	}
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(buf.Bytes())
 	if err != nil{
 		panic(err)
 	}

@@ -54,6 +54,7 @@ func serve() {
 	}).Methods("GET")
 	r.HandleFunc("/list/dep/{ns}", controller.GetDeployments).Methods("GET")
 	r.HandleFunc("/dep/{ns}/{dep}", controller.GetDeployment).Methods("GET")
+	r.HandleFunc("/logs/{ns}/{dep}", controller.GetDeploymentLogs).Methods("GET")
 	r.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		controller.StreamUpdateds(h, w, r)
 	})
